@@ -10,10 +10,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Jarbas</title>
-<meta name="theme-color" content="#0e5a4d">
+<meta name="theme-color" content="#101c36">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Jarbas">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -121,6 +122,51 @@ nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .mic{border:1px solid var(--line);background:var(--chip);border-radius:14px;width:48px;height:46px;font-size:20px;cursor:pointer}
 .mic.rec{background:var(--danger);color:#fff;border-color:var(--danger)}
 #chatBox{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* ===== Visual novo: relógio de bolso do Sr. Alfredo (latão + azul-noite) ===== */
+:root{--bg:#e8ecf2;--panel:#fff;--ink:#14203a;--muted:#5b6780;--line:#d3d9e4;--accent:#14284b;--accent-ink:#fff;
+ --brass:#b8862b;--brass-soft:#f3e7cc;--mine:#14284b;--mine-ink:#f4f6fb;--bubble:#fff;--chip:#e0e6f0;--warn:#a4570b;--danger:#b3261e;
+ --display:"Fraunces",Georgia,"Times New Roman",serif;--font:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1322;--panel:#121c31;--ink:#e8edf7;--muted:#93a0bb;--line:#233152;
+ --accent:#e2b45a;--accent-ink:#1b1403;--brass:#e2b45a;--brass-soft:#2c2411;--mine:#24407a;--mine-ink:#f4f7ff;--bubble:#16213a;--chip:#1c2a47;--warn:#e0a35c;--danger:#ff8a80}}
+body{background:var(--bg)}
+header{background:#101c36;color:#f4f6fb;border-bottom:3px solid var(--brass);gap:14px;padding-bottom:12px}
+.logo{width:44px;height:44px;border-radius:50%;background:#101c36;color:var(--brass);border:2px solid var(--brass);box-shadow:inset 0 0 0 3px #101c36,inset 0 0 0 4px rgba(184,134,43,.55);font:600 22px var(--display)}
+.title b{font:600 22px/1.05 var(--display);letter-spacing:.005em;color:#fff}
+.title span{color:#a9b6d3;font-size:13px}
+.title span i{background:#5fd39b;box-shadow:0 0 0 3px rgba(95,211,155,.2)}
+.title span.off i{background:#ff8a80;box-shadow:0 0 0 3px rgba(255,138,128,.2)}
+.ghost{border-color:rgba(255,255,255,.22);color:#d6def0;border-radius:999px;min-width:40px;min-height:40px}
+.ghost:hover{border-color:var(--brass);color:#fff}
+#feed{gap:12px;padding-top:20px}
+.msg{max-width:min(86%,540px)}
+.msg .b{border-radius:4px 18px 18px 18px;border:1px solid var(--line);border-left:3px solid var(--brass);padding:11px 14px;box-shadow:0 1px 0 rgba(20,32,58,.04)}
+.msg.me .b{background:var(--mine);color:var(--mine-ink);border:0;border-radius:18px 4px 18px 18px}
+.msg .t{font-variant-numeric:tabular-nums}
+.msg.pick .b{background:var(--brass-soft);border:1px solid var(--brass);color:var(--ink);border-radius:999px}
+.opt{border:1.5px solid var(--brass);color:var(--ink);background:var(--brass-soft);border-radius:999px;padding:10px 16px}
+.opt:active{background:var(--brass);color:#fff}
+.opt.done{background:var(--chip);border-color:var(--line)}
+footer{background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(20,32,58,.05)}
+textarea{border-radius:22px;background:var(--bg);padding:12px 16px}
+.send{background:var(--brass);color:#fff;border-radius:50%;width:46px;height:46px}
+.clip,.mic{border-radius:50%;width:46px;height:46px;background:var(--chip)}
+.chip{border-radius:999px;background:var(--brass-soft);border-color:transparent;color:var(--ink)}
+nav{background:var(--panel);box-shadow:0 -1px 0 var(--line)}
+nav button{border-top:0;position:relative;font-weight:500;letter-spacing:.01em}
+nav button[aria-selected="true"]{color:var(--ink);font-weight:700}
+nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;left:50%;width:28px;height:3px;margin-left:-14px;border-radius:0 0 3px 3px;background:var(--brass)}
+.card{border-radius:14px;border-left:3px solid var(--brass)}
+.when{color:var(--brass);font-family:var(--display);font-size:17px}
+.sec{font:600 16px var(--display);text-transform:none;letter-spacing:0;color:var(--ink);margin-top:10px}
+.stat{border-radius:14px}.stat b{font:600 30px var(--display);color:var(--ink)}
+.pill{background:var(--brass-soft);color:var(--ink)}
+.empty b{font:600 20px var(--display)}
+#login{background:#101c36}
+#login form{border:0;border-top:4px solid var(--brass);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+#login h1{font:600 30px var(--display)}
+#login .go{background:var(--brass);color:#fff}
+.sobre .card{border-left:0;border-top:4px solid var(--brass)}.sobre h2{font:600 22px var(--display)}
 </style>
 </head>
 <body>
