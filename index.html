@@ -252,6 +252,7 @@ const URL_RE = /(https?:\/\/[^\s<>"')]+)/g;
 const IMG_RE = /\.(jpe?g|png|gif|webp)(\?|$)/i, VID_RE = /\.(mp4|webm|mov)(\?|$)/i;
 const mediaCache = {};
 function ytId(u){ try{ const x = new URL(u); if (x.hostname === "youtu.be") return x.pathname.slice(1,12); if (/(^|\.)youtube\.com$/.test(x.hostname)){ if (x.pathname === "/watch") return x.searchParams.get("v"); const m = x.pathname.match(/^\/(shorts|embed|live)\/([\w-]{6,})/); if (m) return m[2]; } }catch(e){} return null; }
+function driveId(u){ try{ const x = new URL(u); if (x.hostname !== "drive.google.com") return null; const m = x.pathname.match(/\/file\/d\/([\w-]+)/); return m ? m[1] : (x.pathname === "/open" || x.pathname === "/uc" ? x.searchParams.get("id") : null); }catch(e){ return null; } }
 function host(u){ try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return "link"; } }
 function fillBubble(b, text, midiaUrl, midiaTipo){
   b.textContent = "";
@@ -262,11 +263,14 @@ function fillBubble(b, text, midiaUrl, midiaTipo){
     const id = ytId(part);
     a.textContent = id ? "▶ YouTube" : "🔗 " + host(part);
     b.append(a);
-    if (id) previews.push({yt:id, url:part});
+    const did = driveId(part);
+    if (did){ a.textContent = "📎 Abrir no Drive"; previews.push({drive:did, url:part}); }
+    else if (id) previews.push({yt:id, url:part});
     else if (IMG_RE.test(part)) previews.push({img:part});
     else if (VID_RE.test(part)) previews.push({vid:part});
   });
-  previews.slice(0,3).forEach(p => {
+  previews.slice(0,8).forEach(p => {
+    if (p.drive){ const a = document.createElement("a"); a.className = "yt"; a.href = p.url; a.target = "_blank"; a.rel = "noopener noreferrer"; const im = document.createElement("img"); im.alt = "Arquivo do Drive"; im.loading = "lazy"; im.src = "https://drive.google.com/thumbnail?id=" + encodeURIComponent(p.drive) + "&sz=w800"; im.onerror = () => a.remove(); a.append(im); b.append(a); return; }
     if (p.yt){ const a = document.createElement("a"); a.className = "yt"; a.href = p.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.innerHTML = '<img alt="Vídeo do YouTube" loading="lazy"><span>▶</span>'; a.querySelector("img").src = "https://i.ytimg.com/vi/" + encodeURIComponent(p.yt) + "/hqdefault.jpg"; b.append(a); }
     else if (p.img){ const i = document.createElement("img"); i.className = "midia"; i.loading = "lazy"; i.src = p.img; i.alt = "Imagem"; b.append(i); }
     else if (p.vid){ const v = document.createElement("video"); v.className = "midia"; v.controls = true; v.preload = "metadata"; v.src = p.vid; b.append(v); }
