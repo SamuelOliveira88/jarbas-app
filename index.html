@@ -79,6 +79,31 @@ textarea:focus,input:focus,.opt:focus-visible,.chip:focus-visible,.ghost:focus-v
 #login label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
 #login input{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;color:var(--ink);font-size:16px}
 #login .go{border:0;background:var(--accent);color:var(--accent-ink);border-radius:12px;padding:13px;font-weight:700;cursor:pointer;min-height:46px}
+
+nav{display:flex;background:var(--panel);border-top:1px solid var(--line);padding:0 max(8px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(8px,env(safe-area-inset-left,0px))}
+nav button{flex:1;border:0;background:none;padding:10px 4px 9px;font-size:13px;color:var(--muted);cursor:pointer;border-top:3px solid transparent;min-height:48px}
+nav button[aria-selected="true"]{color:var(--accent);font-weight:700;border-top-color:var(--accent)}
+nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.view{flex:1;min-height:0;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+#vChat{padding:0;gap:0;overflow:hidden}
+.sec{font:700 13px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 0 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.card b{font-weight:700;overflow-wrap:anywhere}
+.card small{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.row{display:flex;gap:10px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+.when{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;background:var(--chip);color:var(--ink)}
+.pill.q{background:var(--warn);color:#fff}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font:700 28px var(--display);font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.search{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:11px 13px;width:100%}
+.mini{align-self:flex-start;border:1px solid var(--line);background:none;border-radius:10px;padding:6px 12px;font-size:13px;color:var(--accent);text-decoration:none;margin-top:4px}
+.hint{color:var(--muted);text-align:center;padding:24px 0}
+.mic{border:1px solid var(--line);background:var(--chip);border-radius:14px;width:48px;height:46px;font-size:20px;cursor:pointer}
+.mic.rec{background:var(--danger);color:#fff;border-color:var(--danger)}
+#chatBox{flex:1;min-height:0;display:flex;flex-direction:column}
 </style>
 </head>
 <body>
@@ -100,15 +125,32 @@ textarea:focus,input:focus,.opt:focus-visible,.chip:focus-visible,.ghost:focus-v
     <div class="title"><b>Jarbas</b><span id="status"><i></i>Conectado</span></div>
     <button class="ghost" id="logout" type="button">Sair</button>
   </header>
-  <main id="feed" aria-live="polite"></main>
-  <footer>
-    <div class="chips"><button class="chip" type="button" data-cmd="/ajuda">/ajuda</button></div>
-    <div class="err" id="sendErr" hidden></div>
-    <form id="sendForm">
-      <textarea id="txt" rows="1" placeholder="Escreva para o Jarbas" aria-label="Mensagem"></textarea>
-      <button class="send" type="submit" id="sendBtn" aria-label="Enviar">➤</button>
-    </form>
-  </footer>
+
+  <section class="view" id="vInicio" hidden></section>
+  <section class="view" id="vAgenda" hidden></section>
+  <section class="view" id="vLeads" hidden></section>
+
+  <section class="view" id="vChat">
+    <div id="chatBox">
+      <main id="feed" aria-live="polite" style="flex:1"></main>
+      <footer>
+        <div class="chips"><button class="chip" type="button" data-cmd="/ajuda">/ajuda</button></div>
+        <div class="err" id="sendErr" hidden></div>
+        <form id="sendForm">
+          <textarea id="txt" rows="1" placeholder="Escreva para o Jarbas" aria-label="Mensagem"></textarea>
+          <button class="mic" type="button" id="micBtn" aria-label="Gravar áudio">🎤</button>
+          <button class="send" type="submit" id="sendBtn" aria-label="Enviar">➤</button>
+        </form>
+      </footer>
+    </div>
+  </section>
+
+  <nav role="tablist" aria-label="Seções">
+    <button role="tab" data-tab="Inicio" aria-selected="false">Início</button>
+    <button role="tab" data-tab="Chat" aria-selected="true">Conversa</button>
+    <button role="tab" data-tab="Agenda" aria-selected="false">Agenda</button>
+    <button role="tab" data-tab="Leads" aria-selected="false">Leads</button>
+  </nav>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -163,6 +205,10 @@ function render(){
   }
   const picks = rows.filter(r => r.who==="me" && r.tipo==="botao");
   rows.forEach(r => {
+    if (r.who === "me" && r.tipo === "audio"){
+      feed.append(el("div","msg me",'<div class="b"></div><div class="t"></div>',"🎤 Áudio enviado",hhmm(r.criado_em)));
+      return;
+    }
     if (r.who === "me" && r.tipo === "botao"){
       const lab = labelFor(r.texto) || "Resposta enviada";
       feed.append(el("div","msg pick",'<div class="b"></div><div class="t"></div>',lab,hhmm(r.criado_em)));
@@ -226,9 +272,137 @@ $("loginForm").addEventListener("submit", async e => {
   if (error){ err.textContent = "E-mail ou senha incorretos."; err.hidden = false; }
 });
 
-function start(){ show("app"); lastSig = ""; load(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(); }, 3000); }
+function start(){ show("app"); setTab("Chat"); lastSig = ""; load(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden && tab === "Chat") load(); }, 3000); }
 function stop(){ clearInterval(timer); rows = []; lastSig = ""; show("login"); $("pw").value = ""; }
-document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").hidden) load(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").hidden) { tab === "Chat" ? load() : loadData(); } });
+
+
+/* ---------- abas ---------- */
+let tab = "Chat", dataTimer = null, leadsCache = [], visitasCache = [];
+function setTab(t){
+  tab = t;
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === t)));
+  ["Inicio","Agenda","Leads","Chat"].forEach(n => { $("v"+n).hidden = n !== t; });
+  if (t === "Chat"){ lastSig = ""; load(); setTimeout(() => { $("feed").scrollTop = $("feed").scrollHeight; }, 50); }
+  else loadData();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+const fmtDia = d => d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
+const fmtHora = d => d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+const mesmoDia = (a,b) => a.toDateString() === b.toDateString();
+function card(html){ const d = document.createElement("div"); d.className = "card"; d.innerHTML = html; return d; }
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+async function loadData(){
+  const ini = new Date(); ini.setHours(0,0,0,0);
+  const [v, l] = await Promise.all([
+    sb.from("jarbas_visitas").select("id,nome_cliente,inicio,fim,endereco,empreendimento,status,posvisita_resultado").gte("inicio", ini.toISOString()).order("inicio",{ascending:true}).limit(100),
+    sb.from("app_leads").select("id,nome,telefone,renda,fgts,interesse,origem,tag,regiao,temperatura,status,ultima_interacao,criado_em").order("ultima_interacao",{ascending:false,nullsFirst:false}).limit(300)
+  ]);
+  if (v.error || l.error){ setStatus(false); }
+  else setStatus(true);
+  visitasCache = v.data || []; leadsCache = l.data || [];
+  if (tab === "Inicio") renderInicio();
+  if (tab === "Agenda") renderAgenda();
+  if (tab === "Leads") renderLeads();
+}
+
+function visitaCard(x){
+  const d = new Date(x.inicio);
+  return card('<div class="row"><span class="when">' + fmtHora(d) + '</span><span class="pill">' + esc(x.status || "agendada") + '</span></div>' +
+    '<b>' + esc(x.nome_cliente || "Cliente") + '</b>' +
+    '<small>' + esc([x.empreendimento, x.endereco].filter(Boolean).join(" · ")) + '</small>');
+}
+
+function renderInicio(){
+  const v = $("vInicio"); v.innerHTML = "";
+  const hoje = new Date();
+  const dehoje = visitasCache.filter(x => mesmoDia(new Date(x.inicio), hoje));
+  const temp = {}; leadsCache.forEach(x => { const k = x.temperatura || "sem classificação"; temp[k] = (temp[k]||0) + 1; });
+  const stats = document.createElement("div"); stats.className = "stats";
+  stats.innerHTML = '<div class="stat"><b>' + dehoje.length + '</b><span>visitas hoje</span></div>' +
+    '<div class="stat"><b>' + visitasCache.length + '</b><span>visitas à frente</span></div>' +
+    '<div class="stat"><b>' + leadsCache.length + '</b><span>leads</span></div>';
+  v.append(stats);
+  const t1 = document.createElement("div"); t1.className = "sec"; t1.textContent = "Hoje, " + fmtDia(hoje); v.append(t1);
+  if (!dehoje.length) v.append(card('<small>Nenhuma visita marcada para hoje.</small>'));
+  dehoje.forEach(x => v.append(visitaCard(x)));
+  if (Object.keys(temp).length){
+    const t2 = document.createElement("div"); t2.className = "sec"; t2.textContent = "Leads por temperatura"; v.append(t2);
+    const c = card(Object.entries(temp).map(([k,n]) => '<div class="row"><span>' + esc(k) + '</span><b>' + n + '</b></div>').join(""));
+    v.append(c);
+  }
+}
+
+function renderAgenda(){
+  const v = $("vAgenda"); v.innerHTML = "";
+  if (!visitasCache.length){ v.innerHTML = '<div class="hint">Nenhuma visita marcada daqui para frente.</div>'; return; }
+  let dia = "";
+  visitasCache.forEach(x => {
+    const d = new Date(x.inicio), k = d.toDateString();
+    if (k !== dia){ dia = k; const t = document.createElement("div"); t.className = "sec"; t.textContent = fmtDia(d); v.append(t); }
+    v.append(visitaCard(x));
+  });
+}
+
+let leadFiltro = "";
+function renderLeads(){
+  const v = $("vLeads"); v.innerHTML = "";
+  const q = document.createElement("input"); q.className = "search"; q.id = "leadQ"; q.type = "search"; q.placeholder = "Buscar por nome, telefone ou região"; q.value = leadFiltro;
+  v.append(q);
+  const lista = document.createElement("div"); lista.style.cssText = "display:flex;flex-direction:column;gap:10px"; v.append(lista);
+  const pinta = () => {
+    lista.innerHTML = ""; const t = leadFiltro.toLowerCase();
+    const achados = leadsCache.filter(x => !t || [x.nome,x.telefone,x.regiao,x.interesse].join(" ").toLowerCase().includes(t));
+    if (!achados.length){ lista.innerHTML = '<div class="hint">Nenhum lead encontrado.</div>'; return; }
+    achados.slice(0,150).forEach(x => {
+      const brl = n => (n === null || n === undefined || n === "") ? "renda não informada" : "renda R$ " + Number(n).toLocaleString("pt-BR");
+      const c = card('<div class="row"><b>' + esc(x.nome || "Sem nome") + '</b><span class="pill">' + esc(x.temperatura || x.status || "—") + '</span></div>' +
+        '<small>' + esc([brl(x.renda), x.interesse, x.regiao].filter(Boolean).join(" · ")) + '</small>' +
+        (x.ultima_interacao ? '<small>Última conversa: ' + new Date(x.ultima_interacao).toLocaleDateString("pt-BR") + '</small>' : ""));
+      if (x.telefone){ const a = document.createElement("a"); a.className = "mini"; a.href = "tel:" + String(x.telefone).replace(/[^\d+]/g,""); a.textContent = "Ligar " + x.telefone; c.append(a); }
+      lista.append(c);
+    });
+  };
+  q.addEventListener("input", () => { leadFiltro = q.value; pinta(); });
+  pinta();
+}
+setInterval(() => { if (!document.hidden && tab !== "Chat" && !$("app").hidden) loadData(); }, 30000);
+
+/* ---------- áudio ---------- */
+let rec = null, chunks = [], recStream = null;
+function limparMic(){ $("micBtn").classList.remove("rec"); $("micBtn").textContent = "🎤"; if (recStream){ recStream.getTracks().forEach(t => t.stop()); recStream = null; } }
+$("micBtn").addEventListener("click", async () => {
+  const err = $("sendErr"); err.hidden = true;
+  if (rec && rec.state === "recording"){ rec.stop(); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder){ err.textContent = "Este navegador não grava áudio. Escreva a mensagem."; err.hidden = false; return; }
+  try{
+    recStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  }catch(e){ err.textContent = "Permita o uso do microfone para gravar."; err.hidden = false; return; }
+  chunks = [];
+  rec = new MediaRecorder(recStream);
+  rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = async () => {
+    const tipoMime = (rec.mimeType || "audio/webm").split(";")[0];
+    limparMic();
+    const blob = new Blob(chunks, {type: tipoMime});
+    if (blob.size < 1200){ err.textContent = "Áudio muito curto. Segure um pouco mais."; err.hidden = false; return; }
+    $("micBtn").disabled = true; $("sendBtn").disabled = true;
+    try{
+      const ext = tipoMime.includes("mp4") ? "m4a" : tipoMime.includes("ogg") ? "ogg" : "webm";
+      const { data: u } = await sb.auth.getUser();
+      const path = (u && u.user ? u.user.id : "app") + "/" + Date.now() + "." + ext;
+      const up = await sb.storage.from("jarbas-audios").upload(path, blob, {contentType: tipoMime, upsert: false});
+      if (up.error) throw up.error;
+      const sg = await sb.storage.from("jarbas-audios").createSignedUrl(path, 3600);
+      if (sg.error) throw sg.error;
+      await send(sg.data.signedUrl, "audio");
+    }catch(e){ err.textContent = "Não consegui enviar o áudio. Tente de novo."; err.hidden = false; }
+    $("micBtn").disabled = false; $("sendBtn").disabled = false;
+  };
+  rec.start(); $("micBtn").classList.add("rec"); $("micBtn").textContent = "⏹";
+});
 
 $("em").value = EMAIL;
 sb.auth.onAuthStateChange((ev, session) => { if (session) start(); else stop(); });
