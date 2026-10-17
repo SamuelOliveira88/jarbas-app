@@ -48,6 +48,13 @@ header{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-are
 .msg{max-width:min(88%,560px);min-width:0}
 .msg .b{padding:10px 13px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bubble);border:1px solid var(--line);border-top-left-radius:6px}
 .msg .t{font-size:12px;color:var(--muted);margin:3px 6px 0}
+.msg .b a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.msg .midia{display:block;max-width:100%;border-radius:12px;margin-top:8px;background:var(--line)}
+.msg .midia.ph{min-height:60px;min-width:120px}
+.msg .yt{display:block;margin-top:8px;border-radius:12px;overflow:hidden;border:1px solid var(--line);position:relative;text-decoration:none}
+.msg .yt img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+.msg .yt span{position:absolute;inset:0;display:grid;place-items:center;font-size:34px;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.clip{border:1px solid var(--line);background:var(--chip);border-radius:14px;width:48px;height:46px;font-size:20px;cursor:pointer}
 .msg.me{align-self:flex-end}
 .msg.me .b{background:var(--mine);color:var(--mine-ink);border-color:transparent;border-top-left-radius:16px;border-top-right-radius:6px}
 .msg.me .t{text-align:right}
@@ -138,6 +145,8 @@ nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
         <div class="err" id="sendErr" hidden></div>
         <form id="sendForm">
           <textarea id="txt" rows="1" placeholder="Escreva para o Jarbas" aria-label="Mensagem"></textarea>
+          <button class="clip" type="button" id="clipBtn" aria-label="Anexar foto ou vídeo">📎</button>
+          <input type="file" id="fileIn" accept="image/*,video/*" hidden>
           <button class="mic" type="button" id="micBtn" aria-label="Gravar áudio">🎤</button>
           <button class="send" type="submit" id="sendBtn" aria-label="Enviar">➤</button>
         </form>
@@ -177,8 +186,8 @@ async function load(){
   if (busy) return; busy = true;
   try{
     const [a,b] = await Promise.all([
-      sb.from("jarbas_app_msgs").select("id,texto,tipo,criado_em").order("criado_em",{ascending:false}).limit(60),
-      sb.from("jarbas_app_saida").select("id,texto,tipo,botoes,criado_em").order("criado_em",{ascending:false}).limit(60)
+      sb.from("jarbas_app_msgs").select("id,texto,tipo,midia_url,midia_tipo,criado_em").order("criado_em",{ascending:false}).limit(60),
+      sb.from("jarbas_app_saida").select("id,texto,tipo,botoes,midia_url,midia_tipo,criado_em").order("criado_em",{ascending:false}).limit(60)
     ]);
     if (a.error || b.error) throw (a.error || b.error);
     setStatus(true);
@@ -214,7 +223,8 @@ function render(){
       feed.append(el("div","msg pick",'<div class="b"></div><div class="t"></div>',lab,hhmm(r.criado_em)));
       return;
     }
-    const box = el("div","msg " + (r.who==="me"?"me":""),'<div class="b"></div><div class="t"></div>',r.texto||"",hhmm(r.criado_em));
+    const box = el("div","msg " + (r.who==="me"?"me":""),'<div class="b"></div><div class="t"></div>',"",hhmm(r.criado_em));
+    fillBubble(box.querySelector(".b"), r.texto||"", r.midia_url, r.midia_tipo);
     if (r.who==="bot"){
       const bt = r.botoes || {};
       const cb = Array.isArray(bt.cb) ? bt.cb : [];
@@ -238,14 +248,51 @@ function render(){
   if (nearBottom || lastSig.length < 6) feed.scrollTop = feed.scrollHeight;
 }
 function el(tag, cls, html, a, b){ const n = document.createElement(tag); n.className = cls; n.innerHTML = html; if (a !== undefined){ n.querySelector(".b").textContent = a; n.querySelector(".t").textContent = b || ""; } return n; }
+const URL_RE = /(https?:\/\/[^\s<>"')]+)/g;
+const IMG_RE = /\.(jpe?g|png|gif|webp)(\?|$)/i, VID_RE = /\.(mp4|webm|mov)(\?|$)/i;
+const mediaCache = {};
+function ytId(u){ try{ const x = new URL(u); if (x.hostname === "youtu.be") return x.pathname.slice(1,12); if (/(^|\.)youtube\.com$/.test(x.hostname)){ if (x.pathname === "/watch") return x.searchParams.get("v"); const m = x.pathname.match(/^\/(shorts|embed|live)\/([\w-]{6,})/); if (m) return m[2]; } }catch(e){} return null; }
+function host(u){ try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return "link"; } }
+function fillBubble(b, text, midiaUrl, midiaTipo){
+  b.textContent = "";
+  const previews = [];
+  String(text).split(URL_RE).forEach((part, i) => {
+    if (i % 2 === 0){ if (part) b.append(document.createTextNode(part)); return; }
+    const a = document.createElement("a"); a.href = part; a.target = "_blank"; a.rel = "noopener noreferrer";
+    const id = ytId(part);
+    a.textContent = id ? "▶ YouTube" : "🔗 " + host(part);
+    b.append(a);
+    if (id) previews.push({yt:id, url:part});
+    else if (IMG_RE.test(part)) previews.push({img:part});
+    else if (VID_RE.test(part)) previews.push({vid:part});
+  });
+  previews.slice(0,3).forEach(p => {
+    if (p.yt){ const a = document.createElement("a"); a.className = "yt"; a.href = p.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.innerHTML = '<img alt="Vídeo do YouTube" loading="lazy"><span>▶</span>'; a.querySelector("img").src = "https://i.ytimg.com/vi/" + encodeURIComponent(p.yt) + "/hqdefault.jpg"; b.append(a); }
+    else if (p.img){ const i = document.createElement("img"); i.className = "midia"; i.loading = "lazy"; i.src = p.img; i.alt = "Imagem"; b.append(i); }
+    else if (p.vid){ const v = document.createElement("video"); v.className = "midia"; v.controls = true; v.preload = "metadata"; v.src = p.vid; b.append(v); }
+  });
+  if (midiaUrl) anexo(b, midiaUrl, midiaTipo);
+}
+async function anexo(b, url, tipo){
+  const isVid = tipo === "video";
+  const n = document.createElement(isVid ? "video" : "img"); n.className = "midia ph";
+  if (isVid){ n.controls = true; n.preload = "metadata"; } else { n.alt = "Foto enviada"; }
+  b.append(n);
+  try{
+    const m = String(url).match(/\/object\/sign\/jarbas-midia\/([^?]+)/);
+    let src = url;
+    if (m){ const path = decodeURIComponent(m[1]); if (!mediaCache[path]){ const sg = await sb.storage.from("jarbas-midia").createSignedUrl(path, 3600); if (sg.error) throw sg.error; mediaCache[path] = sg.data.signedUrl; } src = mediaCache[path]; }
+    n.src = src; n.classList.remove("ph");
+  }catch(e){ n.replaceWith(document.createTextNode(" [arquivo indisponível]")); }
+}
 function labelFor(cb){
   for (const r of rows){ if (r.who!=="bot") continue; const bt = r.botoes||{}; const i = (bt.cb||[]).indexOf(cb); if (i>=0 && LABELS[bt.teclado]) return bt.teclado==="simnao" ? (i===0?(bt.label_sim||"Sim"):(bt.label_nao||"Não")) : LABELS[bt.teclado][i]; }
   return "";
 }
 
-async function send(texto, tipo){
+async function send(texto, tipo, extra){
   const err = $("sendErr"); err.hidden = true;
-  const { error } = await sb.from("jarbas_app_msgs").insert({ corretor_id: CORRETOR, texto, tipo });
+  const { error } = await sb.from("jarbas_app_msgs").insert({ corretor_id: CORRETOR, texto, tipo, ...(extra || {}) });
   if (error){ err.textContent = "Não consegui enviar. Confira a conexão e tente de novo."; err.hidden = false; return false; }
   waitingSince = Date.now(); lastSig = ""; await load(); return true;
 }
@@ -369,6 +416,30 @@ function renderLeads(){
   pinta();
 }
 setInterval(() => { if (!document.hidden && tab !== "Chat" && !$("app").hidden) loadData(); }, 30000);
+
+/* ---------- foto e vídeo ---------- */
+$("clipBtn").addEventListener("click", () => $("fileIn").click());
+$("fileIn").addEventListener("change", async () => {
+  const f = $("fileIn").files[0]; $("fileIn").value = ""; if (!f) return;
+  const err = $("sendErr"); err.hidden = true;
+  const isVid = f.type.startsWith("video/"), isImg = f.type.startsWith("image/");
+  if (!isVid && !isImg){ err.textContent = "Escolha uma foto ou um vídeo."; err.hidden = false; return; }
+  if (f.size > 50 * 1024 * 1024){ err.textContent = "Arquivo grande demais. O limite é 50 MB."; err.hidden = false; return; }
+  $("clipBtn").disabled = true; $("sendBtn").disabled = true; $("clipBtn").textContent = "⏳";
+  try{
+    const ext = (f.name.split(".").pop() || (isVid ? "mp4" : "jpg")).toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,5) || "bin";
+    const { data: u } = await sb.auth.getUser();
+    const path = (u && u.user ? u.user.id : "app") + "/" + Date.now() + "." + ext;
+    const up = await sb.storage.from("jarbas-midia").upload(path, f, {contentType: f.type, upsert: false});
+    if (up.error) throw up.error;
+    const sg = await sb.storage.from("jarbas-midia").createSignedUrl(path, 3600);
+    if (sg.error) throw sg.error;
+    const legenda = $("txt").value.trim() || (isVid ? "Enviei um vídeo." : "Enviei uma foto.");
+    const ok = await send(legenda, "texto", {midia_url: sg.data.signedUrl, midia_tipo: isVid ? "video" : "imagem"});
+    if (ok) $("txt").value = "";
+  }catch(e){ err.textContent = "Não consegui enviar o arquivo. Tente de novo."; err.hidden = false; }
+  $("clipBtn").disabled = false; $("sendBtn").disabled = false; $("clipBtn").textContent = "📎";
+});
 
 /* ---------- áudio ---------- */
 let rec = null, chunks = [], recStream = null;
