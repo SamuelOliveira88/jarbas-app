@@ -1,4 +1,10 @@
 <!doctype html>
+<!--
+  JARBAS — assistente pessoal do corretor Samuel (Equipe Lavile).
+  Homenagem: a Sara leva o nome da avó do Samuel, Dona Maria (gentil e acolhedora);
+  o Jarbas é o Sr. Alfredo, avô do Samuel (pontual, paternal, cuida da rotina).
+  Este projeto carrega essa parte afetiva: cuidar das pessoas como eles cuidavam.
+-->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -54,6 +60,10 @@ header{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-are
 .msg .yt{display:block;margin-top:8px;border-radius:12px;overflow:hidden;border:1px solid var(--line);position:relative;text-decoration:none}
 .msg .yt img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
 .msg .yt span{position:absolute;inset:0;display:grid;place-items:center;font-size:34px;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.sobre{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.sobre[hidden]{display:none}
+.sobre .card{background:var(--bg,#fff);color:inherit;max-width:420px;border-radius:18px;padding:22px;line-height:1.5;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.sobre h2{margin:0 0 10px;font-size:18px}.sobre p{margin:0 0 10px;font-size:14px}.sobre button{margin-top:6px}
 .clip{border:1px solid var(--line);background:var(--chip);border-radius:14px;width:48px;height:46px;font-size:20px;cursor:pointer}
 .msg.me{align-self:flex-end}
 .msg.me .b{background:var(--mine);color:var(--mine-ink);border-color:transparent;border-top-left-radius:16px;border-top-right-radius:6px}
@@ -126,10 +136,19 @@ nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
   </form>
 </div>
 
+<div class="sobre" id="sobre" hidden><div class="card">
+  <h2>Sobre o Jarbas</h2>
+  <p>O Jarbas é o <b>Sr. Alfredo</b>, avô do Samuel: pontual, paternal, cuida da rotina de quem ele ama.</p>
+  <p>A Sara leva o nome da <b>Dona Maria</b>, avó do Samuel: gentil e acolhedora com todo mundo que chega.</p>
+  <p>Este app é uma homenagem aos dois. A ideia é cuidar das pessoas como eles cuidavam.</p>
+  <button class="go" type="button" id="sobreFechar">Fechar</button>
+</div></div>
+
 <div id="app" hidden>
   <header>
     <div class="logo">J</div>
     <div class="title"><b>Jarbas</b><span id="status"><i></i>Conectado</span></div>
+    <button class="ghost" id="sobreBtn" type="button" aria-label="Sobre">ⓘ</button>
     <button class="ghost" id="logout" type="button">Sair</button>
   </header>
 
@@ -483,6 +502,10 @@ $("em").value = EMAIL;
 sb.auth.onAuthStateChange((ev, session) => { if (session) start(); else stop(); });
 sb.auth.getSession().then(({data}) => { if (!data.session) show("login"); });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+<script>
+(function(){var b=document.getElementById('sobreBtn'),p=document.getElementById('sobre'),f=document.getElementById('sobreFechar');
+if(!b||!p)return;b.onclick=function(){p.hidden=false};f.onclick=function(){p.hidden=true};p.onclick=function(e){if(e.target===p)p.hidden=true};})();
 </script>
 </body>
 </html>
